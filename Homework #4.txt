@@ -1,0 +1,95 @@
+#!/bin/bash
+
+#Aquire sudo priveleges
+
+echo Please enter sudo password
+sudo echo sudo password accepted
+
+#Read the usernames and write them to a new file
+awk -F ':' '{ print $1 }' /etc/passwd > usrname.txt
+
+#Read usernames from file
+echo Here are the users that are currently on the system:
+cat $usrname.txt
+
+#Start password reset via input
+	echo "Please specify which user's password to reset."
+	echo "type "'"all"'" to change all users passwords simultaneously."
+	echo "type "'"random"'" to start the random password generator."
+	echo "hit " '"enter"'" to change a specific user's password."
+#User's input
+read usr
+
+#Check to see if the user is on the system
+grep -Fx $usr $usrname.txt
+
+if [ $? -eq 0 ]
+	then
+echo "Resetting password for " '"'$usr'"'
+	#reset the password
+	sudo passwd $usr
+	#if the user types all
+elif [[ $usr = "random" ]]; then
+	cat $usrname.txt | grep /bin/bash | cut -d: f1 > $usrname2.txt
+
+	#clean up
+	mv $usrname.txt $usrname2.txt
+
+	#print out the users on the system
+	echo Here are the users that are currently on the system:
+	cat $usrname.txt
+
+	#Begin to reset the passwords 
+	echo "Please enter the user to randomize:"
+	read usr
+
+	#Check if the user is currently on the system
+	grep -Fx $usr $usrname.txt > /dev/null
+
+	if [ $? -eq 0 ]
+		then
+			echo "Beginning reset of " '"'$usr'"' " password."
+	#Random Password Generator
+	password=$RANDOM 8 a-zA-Z0-9
+	
+	#The Random Password is stored in the var password
+	#pipe the random password into password
+	
+	sudo yes $password | sudo password $usr
+
+	echo "The new password for" '"'$usr'"' "is:"
+	echo $password
+
+else
+	#if it fails
+	echo No matching user has been found
+	echo Please specify a user on the system
+	fi
+elif [[ $usr = "all" ]]; then
+	#Make sure of the user's choice
+	echo You are chosing to reset all users passwords. Are you sure? [yes/no]
+		if [ $makesure = "yes" ]
+		then
+			echo "Okay. What do you want everyone's password to be?"
+			read passwordall
+			echo Now changing all user's passwords...
+
+#Every user change loop
+	for i in 'usrname.txt'; do
+		sudo yes $passwordall | sudo passwd $i
+	done
+		echo "All passwords have been changed to " "$passwordall"
+	else
+		echo "The passwords have not been changed."
+	fi
+	else 
+	#If this fails
+
+	echo No matching user has been found. Attempting...
+	echo "Resetting password for" '"'$usr'"'
+	#Reset the password
+	sudo passwd $usr
+fi
+
+#clean up
+rm -rf $usrname.txt
